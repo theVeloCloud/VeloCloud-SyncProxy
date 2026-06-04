@@ -2,7 +2,7 @@
 velocity-api = "3.5.0-SNAPSHOT"
 
 run-task = "3.0.2"
-idea-ext = ""
+idea-ext = "1.1.8"
 
 [libraries]
 velocity-api = { module = "com.velocitypowered:velocity-api", version.ref = "velocity-api" }

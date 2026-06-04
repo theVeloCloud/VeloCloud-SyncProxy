@@ -11,11 +11,13 @@ plugins {
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.snenjih.de/releases")
 }
 
 dependencies {
     compileOnly(libs.velocity.api)
     annotationProcessor(libs.velocity.api)
+    implementation("de.snenjih.velocloud:bridge-velocity:3.0.7")
 }
 
 java {

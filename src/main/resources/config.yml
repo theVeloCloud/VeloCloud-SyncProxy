@@ -1,0 +1,14 @@
+prefix: "§8[§bSyncProxy§8] "
+fallback-server: "Lobby-1"
+disconnect-message: "§8§m---§r §b§lSyncProxy §8§m---\n§7Der Server wurde gestoppt oder restartet.\n§8§m-------------------"
+
+ban:
+  cache-refresh-interval: 60
+  ban-screen-message: "§8§m----------§r §c§lGebannt §8§m----------\n§7Spieler: §c{player}\n§7Gebannt von: §c{banner}\n§7Grund: §c{reason}\n§7Gebannt am: §7{banned_at}\n§7Gebannt bis: §7{expires_at}\n§7Verbleibende Zeit: §7{time_remaining}\n§8§m------------------------------"
+
+kick-message: "§8§m----------§r §e§lGekickt §8§m----------\n§7Grund: §e{reason}\n§7Gekickt von: §e{banner}\n§8§m------------------------------"
+
+ip-ban-cascade:
+  enabled: false
+  duration: "30d"
+  reason: "Verbunden mit einem gebannten Spieler"

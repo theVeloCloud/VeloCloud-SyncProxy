@@ -4,64 +4,80 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-VeloCloud-SyncProxy is a Velocity proxy server plugin written in Java 21. It leverages the Velocity API to extend proxy server functionality. The plugin uses an event-driven architecture with dependency injection.
+VeloCloud-SyncProxy is a Velocity proxy plugin written in Java 21. It wraps the VeloCloud cloud system (`de.snenjih.velocloud:bridge-velocity`) and exposes proxy-level features: ban/punishment system, maintenance mode, private messaging, tablist, join routing, reconnect handling, MOTD, and service notifications.
 
 ## Build & Development Commands
 
-### Building
 ```bash
-gradle build          # Full build with compilation and artifact generation
-gradle clean build    # Clean build from scratch
-gradle check         # Verify compilation without artifacts
+./gradlew build           # Full build
+./gradlew clean build     # Clean build from scratch
+./gradlew runVelocity     # Run Velocity server with plugin loaded for testing
 ```
 
-### Running
-```bash
-gradle runVelocity   # Run the Velocity server with the plugin loaded for testing
-```
+- **Java Version**: 21 (toolchain in `build.gradle.kts`)
+- **Repositories**: Maven Central, PaperMC (`repo.papermc.io`), and the private `repo.snenjih.de/releases` (hosts the VeloCloud SDK)
+- **Template Expansion**: `BuildConstants.java` is generated from `src/main/templates/` — Gradle replaces `${version}` at compile time. Run `generateTemplates` task manually or let IDE sync trigger it.
 
-### Cleaning
-```bash
-gradle clean         # Remove build artifacts
-```
+## Architecture
 
-### Build Configuration
-- **Java Version**: 21 (toolchain configured in build.gradle.kts)
-- **Build Optimizations**: Configuration cache, parallel compilation, and build caching are enabled
-- **Repositories**: Maven Central and PaperMC public repository
+### Initialization (`SyncProxy.java`)
 
-## Architecture & Code Structure
+All wiring happens in `onProxyInitialization`. The method:
+1. Instantiates `ConfigManager` and `MaintenanceManager`
+2. Tries to get a `DataSource` from `Velocloud.instance().databaseProvider().cloudDataSource()` — the ban system is disabled entirely if this returns null
+3. Registers listeners and commands with Velocity's event/command managers
+4. Subscribes to `ServiceChangeStateEvent` via VeloCloud's own event provider (not Velocity's)
 
-### Entry Point
-- **SyncProxy.java** (`src/main/java/de/Snenjih/SyncProxy.java`): Main plugin class marked with `@Plugin` annotation
+### Key Subsystems
 
-### Design Patterns
+**ConfigManager** (`config/`): Reads/writes `config.yml` using SnakeYAML. Access values via dot-notation keys (`config.getString("ban.reason", default)`). `setNested()` persists changes back to disk immediately.
 
-1. **Plugin System**: Uses Velocity's plugin framework. The main plugin class is registered via the `@Plugin` annotation with metadata (id, name, version, authors, URL).
+**BanManager** (`ban/`): MySQL-backed punishment system using a `DataSource` from VeloCloud. Table: `sp_punishments`. Uses an in-memory `BanCache` for fast login checks, refreshed on a configurable interval. All DB operations are async via `CompletableFuture.supplyAsync`. Supports offline bans (UUID/IP backfilled on next login via `backfillPlayerData`).
 
-2. **Event-Driven Architecture**: The plugin responds to proxy events via the `@Subscribe` annotation on handler methods. Currently listens to `ProxyInitializeEvent` for initialization logic.
+**MaintenanceManager** (`maintenance/`): Thin wrapper over `ConfigManager`. State (`active`) is persisted to `config.yml` on change.
 
-3. **Dependency Injection**: Uses Google Inject for dependency management. The Logger is injected via `@Inject` annotation.
+**LobbyRouter** (`util/`): Picks the least-full `RegisteredServer` in a named VeloCloud service group. Used by join routing, reconnect, and `/hub`.
 
-### Build System
+**Messages** (`util/`): Helper for building Adventure `Component`s from legacy `§`-codes or config values.
 
-- **Template Expansion**: BuildConstants.java uses Gradle's template expansion to inject the project version at compile time. The `${version}` placeholder is replaced during the build process.
-- **Gradle Plugins**:
-  - `run-velocity`: Orchestrates running a Velocity server for local testing
-  - `idea-ext` & `eclipse`: IDE integration for automatic template generation during project sync
+**PrivateMessageManager** (`messaging/`): Holds in-memory last-sender map for `/reply`.
 
-### Package Structure
-```
-src/main/
-├── java/de/Snenjih/
-│   └── SyncProxy.java          # Main plugin class
-└── templates/de/Snenjih/
-    └── BuildConstants.java      # Version constants (generated)
-```
+**TablistTask** (`tablist/`): Implements `Runnable`, scheduled by Velocity's scheduler at a configurable interval. Replaces placeholders (`%online_players%`, `%server%`, `%ping%`, `%time%`, etc.) in header/footer lines from config.
 
-## Development Notes
+### Listener Overview
 
-- **Velocity API Version**: Currently using 3.5.0-SNAPSHOT from PaperMC repository
-- **Plugin ID**: "syncproxy" (used in configurations and commands)
-- **Gradle Features**: The project enables parallel builds and build caching for faster compilation
-- **IDE Setup**: Both IntelliJ IDEA and Eclipse are configured to auto-generate templates on project sync
+| Listener | Velocity Event | Purpose |
+|---|---|---|
+| `JoinLeaveListener` | `PostLoginEvent`, `DisconnectEvent` | Broadcasts join/leave messages; clears PM reply state |
+| `JoinRoutingListener` | `PlayerChooseInitialServerEvent` | Routes new joins to least-full lobby |
+| `ReconnectListener` | `KickedFromServerEvent` | Redirects to fallback on server crash |
+| `LoginListener` | `PreLoginEvent` | Blocks banned players |
+| `MotdListener` | `ProxyPingEvent` | Sets MOTD and player count |
+| `MaintenanceListener` | `LoginEvent` | Kicks non-whitelisted players during maintenance |
+| `TablistListener` | `PostLoginEvent` | Applies tablist to joining players |
+| `AltDetectionListener` | `PostLoginEvent` | Warns staff if player's IP matches a banned account |
+| `ServiceEventListener` | VeloCloud `ServiceChangeStateEvent` | Notifies staff of service start/stop |
+
+### Permission Nodes
+
+| Permission | Purpose |
+|---|---|
+| `syncproxy.notify.service` | Receive service start/stop notifications |
+| `syncproxy.notify.altdetection` | Receive alt-account alerts |
+| `syncproxy.hide.joinleave` | Hide own join/leave message |
+| `syncproxy.maintenance.bypass` | Join during maintenance |
+
+### Adding a New Feature
+
+1. Create your manager/listener class under the appropriate package
+2. Register it in `SyncProxy.onProxyInitialization`
+3. Add config keys to `src/main/resources/config.yml` with comments
+4. Access config via `configManager.getString/getBoolean/getInt/getStringList`
+5. Use `Messages.legacy()` or `Messages.prefix()` for player-facing text
+
+### VeloCloud SDK Integration
+
+The plugin depends on `de.snenjih.velocloud:bridge-velocity`. Key entry point: `Velocloud.instance()`. Used for:
+- `databaseProvider().cloudDataSource()` — shared MySQL connection pool
+- `serviceProvider().findByGroup(groupName)` — list services in a group
+- `eventProvider().subscribe(...)` — subscribe to cloud-level events (separate from Velocity events)

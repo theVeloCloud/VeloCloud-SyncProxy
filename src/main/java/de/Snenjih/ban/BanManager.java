@@ -294,6 +294,25 @@ public class BanManager {
         }
     }
 
+    public CompletableFuture<List<String>> getBannedAccountsByIp(String ip) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "SELECT DISTINCT username FROM sp_punishments " +
+                         "WHERE ip = ? AND active = 1 AND type = 'BAN' " +
+                         "AND (expires_at IS NULL OR expires_at > NOW())";
+            List<String> names = new ArrayList<>();
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, ip);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) names.add(rs.getString("username"));
+                }
+            } catch (SQLException e) {
+                logger.error("[BanManager] getBannedAccountsByIp fehlgeschlagen", e);
+            }
+            return names;
+        });
+    }
+
     public String resolvePlaceholders(String template, BanEntry ban) {
         String result = template
                 .replace("{player}",    ban.getUsername())

@@ -12,3 +12,123 @@ ip-ban-cascade:
   enabled: false
   duration: "30d"
   reason: "Verbunden mit einem gebannten Spieler"
+
+# ─────────────────────────────────────────────────────────
+#  MOTD – Server-Listen-Anzeige
+#  Deaktivieren: enabled: false
+# ─────────────────────────────────────────────────────────
+motd:
+  enabled: true
+  line1: "&6&lVeloCloud &8» &7Ein Minecraft-Netzwerk"
+  line2: "&7Willkommen! Viel Spaß auf dem Netzwerk."
+  # max-players: Maximale Spielerzahl in der Serverliste. -1 = Velocity-Standardwert behalten.
+  max-players: 500
+  # online-players-offset: Wird zum echten Wert addiert (z.B. 1 = immer ein Slot sichtbar frei).
+  online-players-offset: 0
+
+# ─────────────────────────────────────────────────────────
+#  SERVICE-NOTIFICATIONS – Benachrichtigungen bei Service-Events
+#  Deaktivieren: enabled: false
+# ─────────────────────────────────────────────────────────
+service-notifications:
+  enabled: true
+  # Nur Spieler mit dieser Permission erhalten die Nachricht.
+  permission: "syncproxy.notify.service"
+  # Verfügbare Placeholder: %service%, %group%, %state%
+  start-message: "&8[&aSERVICE&8] &7Service &a%service% &7(&e%group%&7) ist jetzt &aonline&7."
+  stop-message: "&8[&cSERVICE&8] &7Service &c%service% &7(&e%group%&7) wird &cgestoppt&7."
+
+# ─────────────────────────────────────────────────────────
+#  TABLIST – Header und Footer der Spielerliste
+#  Deaktivieren: enabled: false
+# ─────────────────────────────────────────────────────────
+tablist:
+  enabled: true
+  # Aktualisierungsintervall in Sekunden.
+  update-interval: 2
+  # Optionale statische Werte für Placeholder (können leer gelassen werden).
+  proxy-name: "Proxy"
+  proxy-uuid: ""
+  proxy-group: ""
+  # Verfügbare Placeholder: %name%, %server%, %ping%, %online_players%, %max_players%,
+  #                         %time%, %proxy%, %proxy_uniqueId%, %proxy_group_name%
+  header:
+    - ""
+    - "&6&lVeloCloud &8» &7Minecraft-Netzwerk"
+    - "&7Online: &a%online_players%&8/&7%max_players%"
+    - ""
+  footer:
+    - ""
+    - "&7Server: &e%server% &8| &7Ping: &a%ping%ms"
+    - "&7Zeit: &b%time%"
+    - ""
+
+# ─────────────────────────────────────────────────────────
+#  MAINTENANCE – Wartungsmodus
+#  Deaktivieren: enabled: false
+#  Permission zum Joinen im Wartungsmodus: syncproxy.maintenance.bypass
+# ─────────────────────────────────────────────────────────
+maintenance:
+  enabled: true
+  # Wird automatisch zur Laufzeit geändert (nicht manuell setzen).
+  active: false
+  motd:
+    line1: "&c&lWARTUNG &8» &7Der Server wird gewartet."
+    line2: "&7Wir sind bald zurück. Bitte habe etwas Geduld."
+    max-players: 0
+  kick-message: "&c&lWartungsmodus\n\n&7Der Server befindet sich im Wartungsmodus.\n&7Wir sind bald zurück.\n\n&8Bitte versuche es später erneut."
+  # Spieler auf dieser Liste können auch im Wartungsmodus joinen.
+  whitelist:
+    - "Snenjih"
+
+# ─────────────────────────────────────────────────────────
+#  JOIN/LEAVE – Beitritts- und Verlassenachrichten
+#  Permission zum Verstecken der eigenen Nachricht: syncproxy.hide.joinleave
+# ─────────────────────────────────────────────────────────
+join-leave:
+  enabled: true
+  join-message: "&8[&a+&8] &7%player% &7hat das Netzwerk betreten."
+  leave-message: "&8[&c-&8] &7%player% &7hat das Netzwerk verlassen."
+
+# ─────────────────────────────────────────────────────────
+#  PRIVATE MESSAGES – /msg und /reply
+# ─────────────────────────────────────────────────────────
+private-message:
+  # Placeholder: %sender%, %target%, %message%
+  format-to: "&8[&7Ich &8→ &b%target%&8] &7%message%"
+  format-from: "&8[&b%sender% &8→ &7Ich&8] &7%message%"
+
+# ─────────────────────────────────────────────────────────
+#  HUB – /hub und /lobby
+# ─────────────────────────────────────────────────────────
+hub:
+  # VeloCloud-Gruppenname für die Lobby-Server.
+  fallback-group: "Lobby"
+
+# ─────────────────────────────────────────────────────────
+#  JOIN-ROUTING – Neue Spieler zum Lobby-Server weiterleiten
+# ─────────────────────────────────────────────────────────
+join-routing:
+  enabled: true
+  # VeloCloud-Gruppenname für die Lobby-Server.
+  fallback-group: "Lobby"
+
+# ─────────────────────────────────────────────────────────
+#  RECONNECT – Spieler bei Server-Absturz weiterleiten
+# ─────────────────────────────────────────────────────────
+reconnect:
+  enabled: true
+  # VeloCloud-Gruppenname für die Fallback-Server.
+  fallback-group: "Lobby"
+  redirect-message: "&7Der Server wurde gestoppt. Du wirst zur Lobby weitergeleitet."
+  no-fallback-message: "&cKein Fallback-Server verfügbar. Bitte versuche es erneut."
+
+# ─────────────────────────────────────────────────────────
+#  ALT-DETECTION – Erkennung von Alt-Accounts
+#  Permission für Staff-Benachrichtigung: syncproxy.notify.altdetection
+# ─────────────────────────────────────────────────────────
+alt-detection:
+  enabled: true
+  notify-permission: "syncproxy.notify.altdetection"
+  # Placeholder: %player%, %accounts%
+  message: "&8[&cALT&8] &7Spieler &c%player% &7verbindet sich mit der IP eines gebannten Accounts: &c%accounts%"

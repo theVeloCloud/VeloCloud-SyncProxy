@@ -8,7 +8,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ConfigManager {
@@ -94,6 +97,56 @@ public class ConfigManager {
     public double getDouble(String key, double defaultValue) {
         Object value = resolve(key);
         return value instanceof Number n ? n.doubleValue() : defaultValue;
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<String> getStringList(String key, List<String> defaultValue) {
+        Object value = resolve(key);
+        if (value instanceof List<?> list) {
+            List<String> result = new ArrayList<>();
+            for (Object item : list) {
+                if (item != null) result.add(item.toString());
+            }
+            return result;
+        }
+        return defaultValue;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void setNested(String key, Object value) {
+        String[] parts = key.split("\\.", 2);
+        if (parts.length == 1) {
+            data.put(key, value);
+        } else {
+            Object existing = data.get(parts[0]);
+            Map<String, Object> section;
+            if (existing instanceof Map<?, ?> m) {
+                section = (Map<String, Object>) m;
+            } else {
+                section = new LinkedHashMap<>();
+                data.put(parts[0], section);
+            }
+            setNestedInMap(section, parts[1], value);
+        }
+        save();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setNestedInMap(Map<String, Object> map, String key, Object value) {
+        String[] parts = key.split("\\.", 2);
+        if (parts.length == 1) {
+            map.put(key, value);
+        } else {
+            Object existing = map.get(parts[0]);
+            Map<String, Object> section;
+            if (existing instanceof Map<?, ?> m) {
+                section = (Map<String, Object>) m;
+            } else {
+                section = new LinkedHashMap<>();
+                map.put(parts[0], section);
+            }
+            setNestedInMap(section, parts[1], value);
+        }
     }
 
     public void set(String key, Object value) {

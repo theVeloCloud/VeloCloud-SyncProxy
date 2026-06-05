@@ -32,7 +32,7 @@ public class CrestartCommand implements SimpleCommand {
             source.sendMessage(Messages.legacy("§cDieser Command kann nur von Spielern verwendet werden."));
             return;
         }
-        if (!player.hasPermission("cloudnet.command.service")) {
+        if (!player.hasPermission("velocloud.command.service")) {
             player.sendMessage(Messages.noPermission());
             return;
         }
